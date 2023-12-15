@@ -1,0 +1,1 @@
+const s=async()=>({products:await fetch("https://fakestoreapi.com/products").then(s=>s.json()),users:await fetch("https://fakestoreapi.com/users").then(s=>s.json())});(async()=>{let{users:t,products:e}=await s();console.log(t,e)})();
