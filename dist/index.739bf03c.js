@@ -575,6 +575,56 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 }
 
 },{}],"ebWYT":[function(require,module,exports) {
+var _wildberriesModel = require("./wildberriesModel");
+var _wildberriesView = require("./wildberriesView");
+var _wildberriesController = require("./wildberriesController");
+const model = new (0, _wildberriesModel.WildberriesModel)();
+const view = new (0, _wildberriesView.WildberriesView)();
+const controller = new (0, _wildberriesController.WildberriesController)(model, view);
+addEventListener("DOMContentLoaded", controller.start());
+
+},{"./wildberriesModel":"9EU6N","./wildberriesView":"4TmYR","./wildberriesController":"9m4RG"}],"9EU6N":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "WildberriesModel", ()=>WildberriesModel);
+var _requests = require("./requests");
+class WildberriesModel {
+    constructor(){
+        this._users = [];
+        this._products = [];
+        this.amountOfProducts = 0;
+        this.searchText = "";
+        this.discoutRate = 10;
+    }
+    getInitialModelData = async ()=>{
+        const { users, products } = await (0, _requests.getWildberriesData)();
+        this.users = users;
+        this.products = products;
+    };
+    set users(value) {
+        this._users = value;
+    }
+    get users() {
+        return this._users;
+    }
+    get products() {
+        const filteredProducts = this._getProductsBySearchText(this._products);
+        return filteredProducts;
+    }
+    set products(value) {
+        this._products = value;
+    }
+    _getProductsBySearchText(products) {
+        if (!this.searchText) return products;
+        const productsFiltered = products.filter((el)=>el.title.toLowerCase().includes(this.searchText.toLocaleLowerCase()));
+        return productsFiltered;
+    }
+}
+
+},{"./requests":"gUqKo","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gUqKo":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "getWildberriesData", ()=>getWildberriesData);
 const getWildberriesData = async ()=>{
     const products = await fetch("https://fakestoreapi.com/products").then((response)=>response.json());
     const users = await fetch("https://fakestoreapi.com/users").then((response)=>response.json());
@@ -583,13 +633,103 @@ const getWildberriesData = async ()=>{
         users
     };
 };
-const runWildberriesApplication = async ()=>{
-    const { users, products } = await getWildberriesData();
-    console.log(users, products);
-// Write your code
-};
-runWildberriesApplication();
 
-},{}]},["b3anl","ebWYT"], "ebWYT", "parcelRequire71d7")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4TmYR":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "WildberriesView", ()=>WildberriesView);
+parcelHelpers.export(exports, "ProductCard", ()=>ProductCard);
+class WildberriesView {
+    constructor(){
+        this.productsSection = document.querySelector(".products__container");
+        this.searchInput = document.querySelector(".search-input");
+        this.slider = document.querySelector(".slider");
+    }
+    createCard(item, seller) {
+        return new ProductCard(item, seller);
+    }
+}
+class ProductCard {
+    constructor({ title, image, price }, { name }){
+        this.price = price;
+        this.imageUrl = image;
+        this.title = title;
+        this.seller = name.firstname + " " + name.lastname;
+        this.discount = 10;
+        this.createProductCardElements();
+    }
+    createCardElement(elementType, className = "") {
+        const element = document.createElement(elementType);
+        element.classList.add(className);
+        return element;
+    }
+    createProductCardElements() {
+        const productCard = this.createCardElement("div", "products__card");
+        const imageBlock = this.createCardElement("div", "image-block");
+        const image = this.createCardElement("img", "products__image");
+        image.setAttribute("src", this.imageUrl);
+        image.setAttribute("alt", "product image");
+        const quickShowButton = this.createCardElement("button", "quick-show");
+        quickShowButton.textContent = "\u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440";
+        const discountElement = this.createCardElement("span", "discount");
+        discountElement.textContent = "- " + this.discount + " %";
+        const addToCartButton = this.createCardElement("button", "add-to-cart-btn");
+        addToCartButton.textContent = "\u0412 \u043A\u043E\u0440\u0437\u0438\u043D\u0443";
+        const productsPrice = this.createCardElement("div", "products__price");
+        const reducedPrice = this.createCardElement("span", "reduced-price");
+        reducedPrice.textContent = (this.price - this.price * this.discount / 100).toFixed(2) + " \u0440.";
+        const initialPrice = this.createCardElement("span", "initial-price");
+        initialPrice.textContent = this.price + " \u0440.";
+        const productDescr = this.createCardElement("div", "products__description");
+        const seller = this.createCardElement("p", "seller");
+        seller.textContent = this.seller;
+        const description = this.createCardElement("p", "description");
+        description.textContent = this.title;
+        imageBlock.append(image, quickShowButton, discountElement, addToCartButton);
+        productsPrice.append(reducedPrice, initialPrice);
+        productDescr.append(seller, description);
+        productCard.append(imageBlock, productsPrice, productDescr);
+        this.productCard = productCard;
+    }
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"9m4RG":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "WildberriesController", ()=>WildberriesController);
+class WildberriesController {
+    constructor(model, view){
+        this.model = model;
+        this.view = view;
+    }
+    searchProduct = (event)=>{
+        this.view.slider.style.display = "none";
+        this.model.searchText = event.target.value;
+        if (event.target.value === "") this.view.slider.style.display = "block";
+        this.start();
+    };
+    handleClicks() {
+        this.view.searchInput.addEventListener("input", this.searchProduct);
+    }
+    start = async function() {
+        await this.model.getInitialModelData();
+        console.log(this.model.products, this.model.users);
+        const productsSection = document.querySelector(".products__container");
+        productsSection.innerHTML = "";
+        for (let item of this.model.products){
+            console.log();
+            const x = this.view.createCard(item, {
+                name: {
+                    firstname: "john",
+                    lastname: "doe"
+                }
+            });
+            productsSection.append(x.productCard);
+        }
+        this.handleClicks();
+    };
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["b3anl","ebWYT"], "ebWYT", "parcelRequire71d7")
 
 //# sourceMappingURL=index.739bf03c.js.map

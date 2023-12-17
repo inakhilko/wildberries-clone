@@ -581,7 +581,7 @@ var _swiperConfigJsonDefault = parcelHelpers.interopDefault(_swiperConfigJson);
 new Swiper(".swiper", (0, _swiperConfigJsonDefault.default));
 
 },{"../../swiper.config.json":"arPhK","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"arPhK":[function(require,module,exports) {
-module.exports = JSON.parse('{"cssMode":true,"navigation":{"nextEl":".swiper-button-next","prevEl":".swiper-button-prev"},"pagination":{"el":".swiper-pagination"},"mousewheel":true,"keyboard":true}');
+module.exports = JSON.parse('{"cssMode":true,"navigation":{"nextEl":".swiper-button-next","prevEl":".swiper-button-prev"},"pagination":{"el":".swiper-pagination","clickable":true},"mousewheel":true,"keyboard":true,"loop":true,"autoplay":{"delay":2500,"disableOnInteraction":false}}');
 
 },{}],"gkKU3":[function(require,module,exports) {
 exports.interopDefault = function(a) {

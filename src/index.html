@@ -31,7 +31,11 @@
     <header class="header">
       <div class="container header__container">
         <a href="#"><img src="assets/logo.svg" alt="Wildberries logo" /></a>
-        <input type="text" class="search" placeholder="Найти на Wildberries" />
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Найти на Wildberries"
+        />
         <button class="cart">
           <svg class="svg-icon icon-cart-thin" fill="none">
             <use xlink:href="#cart-thin"></use>
@@ -63,6 +67,12 @@
           <div class="swiper-button-next"></div>
           <div class="swiper-pagination"></div>
         </div>
+      </div>
+    </section>
+    <section class="products">
+      <div class="container">
+        <h2 class="products__heading">Хиты продаж</h2>
+        <div class="products__container"></div>
       </div>
     </section>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
