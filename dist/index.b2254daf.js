@@ -1,0 +1,1 @@
+var e,t={};t=JSON.parse('{"cssMode":true,"navigation":{"nextEl":".swiper-button-next","prevEl":".swiper-button-prev"},"pagination":{"el":".swiper-pagination","clickable":true},"mousewheel":true,"keyboard":true,"loop":true,"autoplay":{"delay":2500,"disableOnInteraction":false}}'),new Swiper(".swiper",(e=t)&&e.__esModule?e.default:e);
