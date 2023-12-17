@@ -18,3 +18,24 @@ button {
   padding: 0 15px;
   margin: 0 auto;
 }
+
+.add-to-cart-btn {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  border: 1px solid #e664c1;
+  border-radius: 20px;
+  padding: 10px;
+  background-color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+
+  &:hover {
+    background-color: #e664c1;
+    color: #fff;
+  }
+
+  &:active {
+    background-color: #a52cba;
+  }
+}

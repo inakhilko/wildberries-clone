@@ -587,41 +587,148 @@ addEventListener("DOMContentLoaded", controller.start());
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "WildberriesModel", ()=>WildberriesModel);
+var _helpers = require("./helpers");
 var _requests = require("./requests");
 class WildberriesModel {
     constructor(){
-        this._users = [];
-        this._products = [];
+        const { products, cart } = (0, _helpers.getSavedData)();
+        this._products = products;
         this.amountOfProducts = 0;
         this.searchText = "";
         this.discoutRate = 10;
+        this.openedModalProductId = null;
+        this._cart = cart;
     }
     getInitialModelData = async ()=>{
         const { users, products } = await (0, _requests.getWildberriesData)();
-        this.users = users;
-        this.products = products;
+        const multiplier = products.length / users.length;
+        const productsNew = products.map((el, index)=>({
+                ...el,
+                seller: users[Math.floor(index / multiplier)]
+            }));
+        this.products = productsNew;
     };
-    set users(value) {
-        this._users = value;
-    }
-    get users() {
-        return this._users;
-    }
     get products() {
-        const filteredProducts = this._getProductsBySearchText(this._products);
+        let filteredProducts = this._getProductsBySearchText(this._products);
+        filteredProducts = filteredProducts.map((el)=>this._addAdditionalProductsFields(el, this.discoutRate));
         return filteredProducts;
     }
     set products(value) {
+        (0, _helpers.saveProducts)(value);
         this._products = value;
+    }
+    get productModalInfo() {
+        const element = this._products.find(({ id })=>this.openedModalProductId === id);
+        return element ? this._addAdditionalProductsFields(element, this.discoutRate) : null;
+    }
+    openModal(id) {
+        this.openedModalProductId = id;
+    }
+    closeModal() {
+        this.openedModalProductId = null;
+    }
+    _addAdditionalProductsFields(element, discount = 0) {
+        return {
+            ...element,
+            discount,
+            priceWithDiscount: this.calcucatePriceWithDiscount(element.price, discount),
+            poductAmountInCart: this._cart[element.id]
+        };
     }
     _getProductsBySearchText(products) {
         if (!this.searchText) return products;
         const productsFiltered = products.filter((el)=>el.title.toLowerCase().includes(this.searchText.toLocaleLowerCase()));
         return productsFiltered;
     }
+    addToCart(id) {
+        if (this._cart[id]) this._cart[id] += 1;
+        else this._cart[id] = 1;
+        (0, _helpers.saveCart)(this._cart);
+    }
+    deleteFromCart(id) {
+        if (this._cart[id] > 1) this._cart[id] -= 1;
+        else delete this._cart[id];
+        (0, _helpers.saveCart)(this._cart);
+    }
+    get cart() {
+        const cartElements = Object.entries(this._cart).map(([id, amount])=>{
+            const productElement = this._products.find((element)=>String(element.id) === String(id));
+            if (productElement) return {
+                ...productElement,
+                amount,
+                totalPrice: Number((this.calcucatePriceWithDiscount(productElement.price, this.discoutRate) * amount).toFixed(2)),
+                disabledIncreaseButton: false,
+                disabledDecreaseButton: amount === 0
+            };
+            else return null;
+        });
+        const totalPrice = cartElements.reduce((acc, el)=>{
+            if (el) return acc + el.totalPrice;
+            else return acc;
+        }, 0);
+        return {
+            cartElements,
+            totalPrice
+        };
+    }
+    get cartAmount() {
+        return Object.entries(this._cart).reduce((acc, [_, amount])=>acc + amount, 0);
+    }
+    calcucatePriceWithDiscount(priceWithoutDiscount, discount) {
+        return Number((priceWithoutDiscount - priceWithoutDiscount * discount / 100).toFixed(2));
+    }
 }
 
-},{"./requests":"gUqKo","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gUqKo":[function(require,module,exports) {
+},{"./helpers":"hGI1E","./requests":"gUqKo","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hGI1E":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "clickOutside", ()=>clickOutside);
+parcelHelpers.export(exports, "getSavedData", ()=>getSavedData);
+parcelHelpers.export(exports, "saveCart", ()=>saveCart);
+parcelHelpers.export(exports, "saveProducts", ()=>saveProducts);
+const clickOutside = function(handleClickOutside, ...element) {
+    window.addEventListener("click", function(e) {
+        if (element.every((el)=>{
+            return !el.contains(e.target);
+        })) handleClickOutside(e);
+    });
+};
+const wildberiesKey = "wildberries_Inna_Knilko";
+const getSavedData = ()=>{
+    const defaultValues = {
+        products: [],
+        cart: {}
+    };
+    try {
+        const dataJSON = localStorage.getItem(wildberiesKey);
+        if (dataJSON) {
+            const data = JSON.parse(dataJSON);
+            return {
+                products: data.products || defaultValues.products,
+                cart: data.cart || defaultValues.cart
+            };
+        }
+        throw null;
+    } catch (e) {
+        return defaultValues;
+    }
+};
+const saveCart = (cart)=>{
+    const data = getSavedData();
+    localStorage.setItem(wildberiesKey, JSON.stringify({
+        ...data,
+        cart
+    }));
+};
+const saveProducts = (products)=>{
+    const data = getSavedData();
+    localStorage.setItem(wildberiesKey, JSON.stringify({
+        ...data,
+        products
+    }));
+};
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gUqKo":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getWildberriesData", ()=>getWildberriesData);
@@ -638,58 +745,125 @@ const getWildberriesData = async ()=>{
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "WildberriesView", ()=>WildberriesView);
-parcelHelpers.export(exports, "ProductCard", ()=>ProductCard);
 class WildberriesView {
     constructor(){
         this.productsSection = document.querySelector(".products__container");
         this.searchInput = document.querySelector(".search-input");
         this.slider = document.querySelector(".slider");
+        this.productModalWraper = document.querySelector(".product-modal__wrapper");
+        this.cartMenu = document.querySelector(".cart__menu");
+        this.cartBtn = document.querySelector(".cart-btn");
+        this.cartTotal = document.querySelector(".cart__number-of-items");
     }
-    createCard(item, seller) {
-        return new ProductCard(item, seller);
-    }
-}
-class ProductCard {
-    constructor({ title, image, price }, { name }){
-        this.price = price;
-        this.imageUrl = image;
-        this.title = title;
-        this.seller = name.firstname + " " + name.lastname;
-        this.discount = 10;
-        this.createProductCardElements();
-    }
-    createCardElement(elementType, className = "") {
+    createCardElement(elementType, ...classes) {
         const element = document.createElement(elementType);
-        element.classList.add(className);
+        for (let item of classes)element.classList.add(item);
         return element;
     }
-    createProductCardElements() {
+    renderModalProductCardsElements(productInfo, { handleCloseModal, handleAddButton } = {}) {
+        this.productModalWraper.innerHTML = "";
+        this.productModal = null;
+        if (productInfo) {
+            const productCardModal = this.createCardElement("div", "product-modal");
+            const productCardModalContainer = this.createCardElement("div", "product-modal__container");
+            const productDescr = this.createCardElement("div", "product-modal__description");
+            const image = this.createCardElement("img", "product-modal__img");
+            image.setAttribute("src", productInfo.image);
+            image.setAttribute("alt", "product image");
+            const seller = this.createCardElement("span", "seller");
+            seller.textContent = productInfo.seller.username + " / ";
+            const description = this.createCardElement("span", "description");
+            description.textContent = productInfo.title;
+            const productsPrice = this.createCardElement("div", "product-modal__price");
+            const reducedPrice = this.createCardElement("span", "reduced-price");
+            reducedPrice.textContent = productInfo.priceWithDiscount + " \u0440.";
+            const initialPrice = this.createCardElement("span", "initial-price");
+            initialPrice.textContent = productInfo.price + " \u0440.";
+            const addToCartButton = this.createCardElement("button", "add-to-cart-btn");
+            const addCardButtonText = productInfo.poductAmountInCart ? `\u{414}\u{43E}\u{431}\u{430}\u{432}\u{43B}\u{435}\u{43D}\u{43E}: ${productInfo.poductAmountInCart}. \u{414}\u{43E}\u{431}\u{430}\u{432}\u{438}\u{442}\u{44C} \u{435}\u{449}\u{435}.` : "\u0412 \u043A\u043E\u0440\u0437\u0438\u043D\u0443";
+            addToCartButton.textContent = addCardButtonText;
+            productsPrice.append(reducedPrice, initialPrice);
+            productDescr.append(seller, description, productsPrice, addToCartButton);
+            productCardModalContainer.append(image, productDescr);
+            productCardModal.append(productCardModalContainer);
+            this.productModalWraper.append(productCardModal);
+            productCardModal.onclick = (event)=>event.target === productCardModal ? handleCloseModal() : undefined;
+            addToCartButton.onclick = ()=>handleAddButton(productInfo.id);
+        }
+    }
+    createProductCardElements(productInfo, { handleShowButton, handleAddButton } = {}) {
         const productCard = this.createCardElement("div", "products__card");
         const imageBlock = this.createCardElement("div", "image-block");
         const image = this.createCardElement("img", "products__image");
-        image.setAttribute("src", this.imageUrl);
+        image.setAttribute("src", productInfo.image);
         image.setAttribute("alt", "product image");
         const quickShowButton = this.createCardElement("button", "quick-show");
         quickShowButton.textContent = "\u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440";
         const discountElement = this.createCardElement("span", "discount");
-        discountElement.textContent = "- " + this.discount + " %";
+        discountElement.textContent = "- " + productInfo.discount + " %";
         const addToCartButton = this.createCardElement("button", "add-to-cart-btn");
-        addToCartButton.textContent = "\u0412 \u043A\u043E\u0440\u0437\u0438\u043D\u0443";
+        const addCardButtonText = productInfo.poductAmountInCart ? `\u{414}\u{43E}\u{431}\u{430}\u{432}\u{43B}\u{435}\u{43D}\u{43E}: ${productInfo.poductAmountInCart}. \u{414}\u{43E}\u{431}\u{430}\u{432}\u{438}\u{442}\u{44C} \u{435}\u{449}\u{435}.` : "\u0412 \u043A\u043E\u0440\u0437\u0438\u043D\u0443";
+        addToCartButton.textContent = addCardButtonText;
         const productsPrice = this.createCardElement("div", "products__price");
         const reducedPrice = this.createCardElement("span", "reduced-price");
-        reducedPrice.textContent = (this.price - this.price * this.discount / 100).toFixed(2) + " \u0440.";
+        reducedPrice.textContent = productInfo.priceWithDiscount + " \u0440.";
         const initialPrice = this.createCardElement("span", "initial-price");
-        initialPrice.textContent = this.price + " \u0440.";
+        initialPrice.textContent = productInfo.price + " \u0440.";
         const productDescr = this.createCardElement("div", "products__description");
         const seller = this.createCardElement("p", "seller");
-        seller.textContent = this.seller;
+        seller.textContent = productInfo.seller.username;
         const description = this.createCardElement("p", "description");
-        description.textContent = this.title;
+        description.textContent = productInfo.title;
         imageBlock.append(image, quickShowButton, discountElement, addToCartButton);
         productsPrice.append(reducedPrice, initialPrice);
         productDescr.append(seller, description);
         productCard.append(imageBlock, productsPrice, productDescr);
-        this.productCard = productCard;
+        quickShowButton.onclick = handleShowButton;
+        addToCartButton.onclick = handleAddButton;
+        return productCard;
+    }
+    createCartMenuListItem({ title, id, image, amount, totalPrice, disabledIncreaseButton, disabledDecreaseButton }, { handleIncreaseBtnClick, handleDecreaseBtnClick }) {
+        const cartListItem = this.createCardElement("div", "cart__list-item");
+        const cartListItemImg = this.createCardElement("img", "cart__img");
+        cartListItemImg.setAttribute("src", image);
+        const cartListItemName = this.createCardElement("span", "cart__list-item__title");
+        cartListItemName.textContent = title;
+        const cartActionsBlock = this.createCardElement("div", "cart-actions");
+        const cartListAddBtn = this.createCardElement("button", "cart-actions__btn");
+        cartListAddBtn.textContent = "+";
+        const cartListItemAmount = this.createCardElement("div", "cart-actions__amount");
+        cartListItemAmount.textContent = amount;
+        const cartListDeleteBtn = this.createCardElement("button", "cart-actions__btn");
+        cartListDeleteBtn.textContent = "\u2013";
+        const cartTotalPrice = this.createCardElement("div", "cart__total-price");
+        cartTotalPrice.textContent = totalPrice;
+        if (disabledIncreaseButton) cartListAddBtn.classList.add("cart-actions__btn--disable");
+        if (disabledDecreaseButton) cartListDeleteBtn.classList.add("cart-actions__btn--disable");
+        cartListAddBtn.onclick = !disabledIncreaseButton ? ()=>handleIncreaseBtnClick(id) : undefined;
+        cartListDeleteBtn.onclick = !disabledDecreaseButton ? ()=>handleDecreaseBtnClick(id) : undefined;
+        cartActionsBlock.append(cartListDeleteBtn, cartListItemAmount, cartListAddBtn);
+        cartListItem.append(cartListItemImg, cartListItemName, cartActionsBlock, cartTotalPrice);
+        return cartListItem;
+    }
+    changeNumberOfItems(amount) {
+        const numberOfItems = document.querySelector(".number-of-items");
+        numberOfItems.textContent = amount;
+    }
+    createTotalPriceElement(totalPrice) {
+        const cartListTotal = this.createCardElement("div", "cart__list-item", "cart__total");
+        const cartListItemTitle = this.createCardElement("span", "cart__list-item__title");
+        cartListItemTitle.textContent = "\u0418\u0442\u043E\u0433\u043E";
+        const cartListTotalPrice = this.createCardElement("div", "cart__total-price");
+        cartListTotalPrice.textContent = totalPrice;
+        cartListTotal.append(cartListItemTitle, cartListTotalPrice);
+        return cartListTotal;
+    }
+    renderCart({ cartElements, totalPrice }, totalElements, handlers) {
+        this.cartMenu.innerHTML = "";
+        const cartHTMLElements = cartElements.map((element)=>this.createCartMenuListItem(element, handlers));
+        const totalPriceElement = this.createTotalPriceElement(totalPrice);
+        this.cartMenu.append(...cartHTMLElements, totalPriceElement);
+        this.cartTotal.textContent = totalElements;
     }
 }
 
@@ -697,6 +871,7 @@ class ProductCard {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "WildberriesController", ()=>WildberriesController);
+var _helpers = require("./helpers");
 class WildberriesController {
     constructor(model, view){
         this.model = model;
@@ -710,26 +885,80 @@ class WildberriesController {
     };
     handleClicks() {
         this.view.searchInput.addEventListener("input", this.searchProduct);
+        (0, _helpers.clickOutside)(this.closeCart.bind(this), this.view.cartMenu, this.view.cartBtn);
+        this.view.cartBtn.addEventListener("click", this.openCart.bind(this));
     }
-    start = async function() {
-        await this.model.getInitialModelData();
-        console.log(this.model.products, this.model.users);
-        const productsSection = document.querySelector(".products__container");
-        productsSection.innerHTML = "";
-        for (let item of this.model.products){
-            console.log();
-            const x = this.view.createCard(item, {
-                name: {
-                    firstname: "john",
-                    lastname: "doe"
-                }
+    closeModal() {
+        this.model.closeModal();
+        this.renderModal();
+    }
+    openModal(id) {
+        this.model.openModal(id);
+        this.renderModal();
+    }
+    renderModal() {
+        const handleCloseModal = this.closeModal.bind(this);
+        this.view.renderModalProductCardsElements(this.model.productModalInfo, {
+            handleCloseModal,
+            handleAddButton: this.addToCart.bind(this)
+        });
+    }
+    openCart() {
+        if (this.model.cartAmount > 0) this.view.cartMenu.classList.remove("cart__menu--hidden");
+    }
+    closeCart() {
+        this.view.cartMenu.classList.add("cart__menu--hidden");
+    }
+    renderCards() {
+        this.view.productsSection.innerHTML = "";
+        const cards = this.model.products.map((el)=>{
+            const handleAddButton = ()=>{
+                this.addToCart(el.id);
+            };
+            const handleShowButton = ()=>{
+                this.openModal(el.id);
+            };
+            return this.view.createProductCardElements(el, {
+                handleShowButton,
+                handleAddButton
             });
-            productsSection.append(x.productCard);
-        }
+        });
+        this.view.productsSection.append(...cards);
+    }
+    addToCart(id) {
+        this.model.addToCart(id);
+        this.renderCart();
+        this.renderCards();
+        this.renderModal();
+    }
+    deleteFromCart(id) {
+        this.model.deleteFromCart(id);
+        if (this.model.cartAmount === 0) this.closeCart();
+        this.renderCart();
+        this.renderModal();
+        this.renderCards();
+    }
+    renderCart() {
+        this.view.renderCart(this.model.cart, this.model.cartAmount, {
+            handleIncreaseBtnClick: this.addToCart.bind(this),
+            handleDecreaseBtnClick: this.deleteFromCart.bind(this)
+        });
+    }
+    getDataFromServer = async ()=>{
+        try {
+            await this.model.getInitialModelData();
+            this.renderCards();
+            this.renderCart();
+        } catch (e) {}
+    };
+    start = async function() {
+        this.renderCards();
+        this.renderCart();
         this.handleClicks();
+        this.getDataFromServer();
     };
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["b3anl","ebWYT"], "ebWYT", "parcelRequire71d7")
+},{"./helpers":"hGI1E","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["b3anl","ebWYT"], "ebWYT", "parcelRequire71d7")
 
 //# sourceMappingURL=index.739bf03c.js.map
